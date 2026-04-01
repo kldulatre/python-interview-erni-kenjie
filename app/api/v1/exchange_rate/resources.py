@@ -22,7 +22,8 @@ class ExchangeRateResource:
                 base_currency=base_currency,
                 quote_currency=quote_currency,
                 rate=rate,
-                rate_date=datetime.now().date()
+                rate_date=datetime.now().date(),
+                side="BUY"
             )
             db.add(data)
             db.commit()
