@@ -24,7 +24,7 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-# app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(api_router, prefix=settings.API_V1_STR)
 # app.include_router(exchange_rate_router, prefix=settings.API_V1_STR)
 
 @app.get("/")

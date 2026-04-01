@@ -2,6 +2,7 @@ from app.services.dummy_exchange import DummyExchange
 from sqlalchemy.orm import Session
 from app.models.exchange_rate_model import ExchangeRateModel
 from app.schemas.exchange_rate_schema import ExchangeRateResponse
+from datetime import datetime
 
 
 class ExchangeRateResource:
