@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Numeric, Date
 from app.db.base_class import Base
+from decimal import Decimal
 
 class ExchangeRateModel(Base):
     __tablename__ = "exchange_rates"
@@ -9,4 +10,4 @@ class ExchangeRateModel(Base):
     rate_date = Column(Date, index=True)
     base_currency = Column(String, index=True)
     quote_currency = Column(String, index=True)
-    rate = Column(Numeric, index=True)
+    rate = Column(Decimal, index=True)
