@@ -32,8 +32,10 @@ class ExchangeRateResource:
         
         return rate
 
-    def delete_exchange_rate(self, id: int) -> ExchangeRateResponse:
+    def delete_exchange_rate(self, id: int, db: Session) -> ExchangeRateResponse:
         rate = db.query(ExchangeRateModel).filter(ExchangeRateModel.id == id).first()
+        if rate is None:
+            raise HTTPException(status_code=404, detail="Exchange rate not found")
         db.delete(rate)
         db.commit()
         return rate

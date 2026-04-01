@@ -13,5 +13,5 @@ def get_latest_exchange_rate(base_currency: str, quote_currency: str, db: Sessio
     return ExchangeRateResource().get_latest_exchange_rate(db, base_currency, quote_currency)
 
 @router.delete("/{id}")
-def delete_exchange_rate(id: int) -> ExchangeRateResponse:
-    return ExchangeRateResource().delete_exchange_rate(id)
+def delete_exchange_rate(id: int, db: Session = Depends(get_db)) -> ExchangeRateResponse:
+    return ExchangeRateResource().delete_exchange_rate(id, db)
