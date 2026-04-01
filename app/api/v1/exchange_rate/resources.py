@@ -29,7 +29,6 @@ class ExchangeRateResource:
             return data
         
         return rate
-        
 
     def delete_exchange_rate(self, id: int) -> ExchangeRateResponse:
         rate = db.query(ExchangeRateModel).filter(ExchangeRateModel.id == id).first()
