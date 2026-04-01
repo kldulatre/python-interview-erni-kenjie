@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from app.services.dummy_exchange import DummyExchange
 from sqlalchemy.orm import Session
 from app.models.exchange_rate_model import ExchangeRateModel
@@ -17,11 +18,15 @@ class ExchangeRateResource:
         ).first()
 
         if rate is None:
-            rate = DummyExchange().get_rate(params.base_currency, params.quote_currency)
+            try:
+                rate_value = DummyExchange().get_rate(params.base_currency, params.quote_currency)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error fetching exchange rate: {str(e)}")
+
             data = ExchangeRateModel(
-                base_currency=base_currency,
-                quote_currency=quote_currency,
-                rate=rate,
+                base_currency=params.base_currency,
+                quote_currency=params.quote_currency,
+                rate=rate_value,
                 rate_date=datetime.now().date(),
                 side="BUY"
             )
