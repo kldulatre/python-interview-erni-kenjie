@@ -1,14 +1,7 @@
 from typing import TYPE_CHECKING
 from sqlalchemy import Column, Integer, String, Float, Decimal
 
-
-# transaction_timestamp
-# base_currency, quote_currency
-# side (BUY or SELL)
-# foreign_amount and/or base_amount (see input options below)
-# effective_rate (snapsho 
-
-class Transaction:
+class TransactionModel:
     __tablename__ = "transactions"
 
     id = Column(Integer, primary_key=True, index=True)
