@@ -1,9 +1,10 @@
+from datetime import date
 from typing import Optional
 from decimal import Decimal
 from pydantic import BaseModel
 
 class ExchangeRateBase(BaseModel):
-    rate_date: Optional[str] = None
+    rate_date: Optional[date] = None
     base_currency: Optional[str] = None
     quote_currency: Optional[str] = None
     side: Optional[str] = None

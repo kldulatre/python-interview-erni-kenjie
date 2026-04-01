@@ -1,9 +1,10 @@
+from datetime import datetime
 from typing import Optional
 from decimal import Decimal
 from pydantic import BaseModel, Field
 
 class TransactionBase(BaseModel):
-    transaction_timestamp: Optional[str] = None
+    transaction_timestamp: Optional[datetime] = None
     base_currency: Optional[str] = None
     quote_currency: Optional[str] = None
     side: Optional[str] = None
