@@ -1,15 +1,9 @@
-from typing import TYPE_CHECKING
 from sqlalchemy import Column, Integer, String, Float
+from app.db.base_class import Base
 
-# Local imports
-# from app.db.base_class import Base
-
-# Note: In a real project, you'd use a Base class from app.db.session.
-# For now, this is a placeholder to show the structure.
-
-class Item:
+class Item(Base):
     """
-    Sample Item model.
+    Item model.
     """
     __tablename__ = "items"
 

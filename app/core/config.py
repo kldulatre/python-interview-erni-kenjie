@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     
     # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    # Core Database settings
+    SQLALCHEMY_DATABASE_URL: str = "sqlite:///./sql_app.db"
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
