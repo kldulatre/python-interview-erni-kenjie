@@ -11,4 +11,5 @@ class TransactionModel(Base):
     quote_currency = Column(String, index=True)
     base_amount = Column(Numeric, index=True)
     foreign_amount = Column(Numeric, index=True)
+    actual_rate = Column(Numeric, index=True)
     effective_rate = Column(Numeric, index=True)
