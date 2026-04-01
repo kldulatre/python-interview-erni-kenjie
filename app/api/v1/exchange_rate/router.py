@@ -1,5 +1,5 @@
 from typing import Any, List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from app.schemas.exchange_rate_schema import ExchangeRateResponse, ExchangeRateBase
