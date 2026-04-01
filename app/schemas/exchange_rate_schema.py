@@ -10,8 +10,9 @@ class ExchangeRateBase(BaseModel):
     side: Optional[str] = None
     rate: Optional[Decimal] = None
 
-class ExchangeRateCreate(ExchangeRateBase):
-    pass
+class ExchangeRateGet(ExchangeRateBase):
+    base_currency: str
+    quote_currency: str
 
 class ExchangeRateDelete(ExchangeRateBase):
     pass

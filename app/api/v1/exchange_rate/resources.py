@@ -1,7 +1,7 @@
 from app.services.dummy_exchange import DummyExchange
 from sqlalchemy.orm import Session
 from app.models.exchange_rate_model import ExchangeRateModel
-from app.schemas.exchange_rate_schema import ExchangeRateResponse
+from app.schemas.exchange_rate_schema import ExchangeRateResponse, ExchangeRateGet
 from datetime import datetime
 
 
@@ -9,15 +9,15 @@ class ExchangeRateResource:
     def __init__(self):
         pass
 
-    def get_latest_exchange_rate(self, db: Session, base_currency: str, quote_currency: str) -> ExchangeRateResponse:
+    def get_latest_exchange_rate(self, db: Session, params: ExchangeRateGet) -> ExchangeRateResponse:
         rate = db.query(ExchangeRateModel).filter(
-            ExchangeRateModel.base_currency == base_currency, 
-            ExchangeRateModel.quote_currency == quote_currency,
+            ExchangeRateModel.base_currency == params.base_currency, 
+            ExchangeRateModel.quote_currency == params.quote_currency,
             ExchangeRateModel.rate_date == datetime.now().date()
         ).first()
 
         if rate is None:
-            rate = DummyExchange().get_rate(base_currency, quote_currency)
+            rate = DummyExchange().get_rate(params.base_currency, params.quote_currency)
             data = ExchangeRateModel(
                 base_currency=base_currency,
                 quote_currency=quote_currency,
