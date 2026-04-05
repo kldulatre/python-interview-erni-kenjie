@@ -16,7 +16,7 @@ class ExchangeRateCreate(BaseModel):
     base_currency: str
     quote_currency: str
     side: str
-    rate: Decimal
+    rate: Optional[Decimal] = None
 
     @field_validator("base_currency", "quote_currency")
     @classmethod
@@ -32,13 +32,6 @@ class ExchangeRateCreate(BaseModel):
         v = v.upper().strip()
         if v not in _VALID_SIDES:
             raise ValueError(f"Side must be BUY or SELL, got '{v}'")
-        return v
-
-    @field_validator("rate")
-    @classmethod
-    def validate_rate(cls, v: Decimal) -> Decimal:
-        if v <= 0:
-            raise ValueError("Rate must be a positive number")
         return v
 
 

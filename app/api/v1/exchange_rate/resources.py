@@ -20,6 +20,7 @@ class ExchangeRateResource:
         """
         Insert a new daily rate or update the rate value if one already exists
         for the same (rate_date, base_currency, quote_currency, side).
+        If payload.rate is not provided, fetch it from a 3rd party API and apply a spread.
         """
         existing = (
             db.query(ExchangeRateModel)
@@ -32,8 +33,36 @@ class ExchangeRateResource:
             .first()
         )
 
+        # Determine the rate to use
+        final_rate = payload.rate
+        if final_rate is None:
+            # Fetch from 3rd party API
+            from app.services.frankfurter_service import FrankfurterService
+            from decimal import Decimal
+            
+            fetched_rate = FrankfurterService().fetch_rate(
+                rate_date=payload.rate_date,
+                base_currency=payload.base_currency,
+                quote_currency=payload.quote_currency
+            )
+            
+            # Apply simulated spread depending on side
+            # (In reality, spread implies store makes a profit. 
+            #  We simulate: SELL is 1% higher, BUY is 1% lower than market rate)
+            if payload.side.upper() == "SELL":
+                final_rate = fetched_rate * Decimal("1.01")
+            else:
+                final_rate = fetched_rate * Decimal("0.99")
+
+            # Validate the calculated rate is positive
+            if final_rate <= 0:
+                 raise HTTPException(status_code=400, detail="Calculated rate is not positive")
+        else:
+            if final_rate <= 0:
+                 raise HTTPException(status_code=400, detail="Provided rate must be a positive number")
+
         if existing:
-            existing.rate = payload.rate
+            existing.rate = final_rate
             db.commit()
             db.refresh(existing)
             return existing
@@ -43,7 +72,7 @@ class ExchangeRateResource:
             base_currency=payload.base_currency,
             quote_currency=payload.quote_currency,
             side=payload.side,
-            rate=payload.rate,
+            rate=final_rate,
         )
         db.add(new_rate)
         db.commit()

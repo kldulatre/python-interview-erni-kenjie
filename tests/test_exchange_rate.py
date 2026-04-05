@@ -3,10 +3,41 @@ Tests for Exchange Rate CRUD endpoints.
 """
 
 import pytest
+from unittest.mock import patch
+from httpx import Response
 
 
 class TestCreateRate:
     """POST /api/v1/rates"""
+
+    @patch("httpx.Client.get")
+    def test_create_rate_success_with_fetch(self, mock_get, client, sample_rate_payload):
+        # Setup mock response from Frankfurter
+        import httpx
+        mock_request = httpx.Request("GET", "https://api.frankfurter.app")
+        mock_response = Response(
+            200, request=mock_request, json={"amount": 1.0, "base": "PHP", "date": "2026-02-02", "rates": {"USD": 0.0175}}
+        )
+        mock_get.return_value = mock_response
+
+        # Remove rate from payload to force fetch
+        payload = sample_rate_payload.copy()
+        del payload["rate"]
+
+        resp = client.post("/api/v1/rates/", json=payload)
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["base_currency"] == "PHP"
+        assert data["quote_currency"] == "USD"
+        assert data["side"] == "SELL"
+        # Since side=SELL, the rate should be 0.0175 * 1.01 = 0.017675
+        assert float(data["rate"]) == 0.017675
+        
+        # Verify the mock was called correctly
+        mock_get.assert_called_once()
+        args, kwargs = mock_get.call_args
+        assert "api.frankfurter.app/2026-02-02" in args[0]
+        assert kwargs["params"] == {"from": "PHP", "to": "USD"}
 
     def test_create_rate_success(self, client, sample_rate_payload):
         resp = client.post("/api/v1/rates/", json=sample_rate_payload)
@@ -45,12 +76,12 @@ class TestCreateRate:
     def test_create_rate_negative_rate(self, client, sample_rate_payload):
         payload = {**sample_rate_payload, "rate": "-1.00"}
         resp = client.post("/api/v1/rates/", json=payload)
-        assert resp.status_code == 422
+        assert resp.status_code == 400
 
     def test_create_rate_zero_rate(self, client, sample_rate_payload):
         payload = {**sample_rate_payload, "rate": "0"}
         resp = client.post("/api/v1/rates/", json=payload)
-        assert resp.status_code == 422
+        assert resp.status_code == 400
 
 
 class TestListRates:
