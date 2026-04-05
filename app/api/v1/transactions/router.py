@@ -22,61 +22,7 @@ def get_rounding_suggestion(payload: SuggestionRequest, db: Session = Depends(ge
     Given an amount and currency pair, fetch today's rate, compute the rounding 
     adjustment required, and suggest options to the teller.
     """
-    if payload.foreign_amount is None and payload.base_amount is None:
-        raise HTTPException(status_code=422, detail="Either foreign_amount or base_amount is required.")
-    if payload.foreign_amount is not None and payload.base_amount is not None:
-        raise HTTPException(status_code=422, detail="Only one of foreign_amount or base_amount should be provided.")
-
-    from app.api.v1.currency.resources import CurrencyResource
-    CurrencyResource().validate_currencies(db, [payload.base_currency, payload.quote_currency])
-
-    from datetime import datetime
-    from app.api.v1.exchange_rate.resources import ExchangeRateResource
-    from decimal import Decimal
-
-    today = datetime.now().date()
-    rate_record = ExchangeRateResource().get_rate(
-        db,
-        rate_date=today,
-        base_currency=payload.base_currency,
-        quote_currency=payload.quote_currency,
-        side=payload.side,
-    )
-    if not rate_record:
-        raise HTTPException(status_code=422, detail=f"No rate found for {payload.base_currency}/{payload.quote_currency} today.")
-
-    rate_val = Decimal(str(rate_record.rate))
-
-    handler = TransactionHandlerFactory.get_handler(payload.side)
-    result = handler.process(
-        rate=rate_val,
-        base_currency=payload.base_currency,
-        foreign_amount=payload.foreign_amount,
-        base_amount=payload.base_amount,
-    )
-
-    exact_total = result["base_amount"] - result["rounding_adjustment"]
-    
-    from app.services.transaction_handler import get_currency_rounding_rules
-    _, suggestion_step = get_currency_rounding_rules(payload.base_currency)
-
-    # Calculate the options based on the target suggestion step
-    remainder = exact_total % suggestion_step
-    if remainder == Decimal("0"):
-        business_absorbs = Decimal("0.00")
-        customer_adds = Decimal("0.00")
-    else:
-        business_absorbs = remainder
-        customer_adds = suggestion_step - remainder
-
-    return SuggestionResponse(
-        exact_base_total=exact_total,
-        rounded_base_total=result["base_amount"],
-        rounding_adjustment=result["rounding_adjustment"],
-        fee_amount=result["fee_amount"],
-        customer_adds=customer_adds,
-        business_absorbs=business_absorbs
-    )
+    return _resource.get_rounding_suggestion(db, payload)
 
 
 
