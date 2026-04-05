@@ -64,6 +64,7 @@ class TransactionResource:
         # 4. Persist
         txn = TransactionModel(
             transaction_id=txn_id,
+            exchange_rate_id=rate_record.id,
             transaction_timestamp=payload.timestamp,
             base_currency=payload.base_currency,
             quote_currency=payload.quote_currency,
