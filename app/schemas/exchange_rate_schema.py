@@ -3,7 +3,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator, model_validator, ConfigDict
 
 
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
@@ -56,8 +56,7 @@ class ExchangeRateResponse(BaseModel):
     side: str
     rate: Decimal
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ExchangeRateFilter(BaseModel):

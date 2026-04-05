@@ -1,6 +1,6 @@
 import os
 from typing import List, Union
-from pydantic import AnyHttpUrl, validator
+from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,7 +17,8 @@ class Settings(BaseSettings):
     # Core Database settings
     SQLALCHEMY_DATABASE_URL: str = f"sqlite:///{os.path.join(_BASE_DIR, 'sql_app.db')}"
 
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
