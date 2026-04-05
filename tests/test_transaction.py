@@ -227,7 +227,8 @@ class TestSuggestionEndpoint:
         assert resp.status_code == 200
         data = resp.json()
         assert float(data["rounding_adjustment"]) == 0.0
-        assert "The amount is perfectly even" in data["suggestion"]
+        assert float(data["customer_adds"]) == 0.0
+        assert float(data["business_absorbs"]) == 0.0
 
     def test_suggestion_round_up(self, client):
         """When rounding up, business loses."""
@@ -240,10 +241,12 @@ class TestSuggestionEndpoint:
         })
         assert resp.status_code == 200
         data = resp.json()
-        assert float(data["rounding_adjustment"]) == 0.01
-        assert "Option 1" in data["suggestion"]
-        assert "Option 2" in data["suggestion"]
-        assert "absorbs the 0.01 loss" in data["suggestion"]
+        # raw base=5001.50, fee=25.01, approx exact=4976.49 
+        # remainder = 4976.49 % 0.05 = 0.04
+        # business absorbs = 0.04
+        # customer adds = 0.05 - 0.04 = 0.01
+        assert float(data["customer_adds"]) == 0.01
+        assert float(data["business_absorbs"]) == 0.04
 
     def test_validation_errors(self, client):
         # Missing amounts

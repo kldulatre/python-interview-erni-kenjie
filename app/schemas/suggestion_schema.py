@@ -41,10 +41,11 @@ class SuggestionRequest(BaseModel):
 
 class SuggestionResponse(BaseModel):
     """
-    Response providing the calculation breakdown and a business suggestion.
+    Response providing the calculation breakdown and the two rounding options.
     """
     exact_base_total: Decimal
     rounded_base_total: Decimal
     rounding_adjustment: Decimal
     fee_amount: Decimal
-    suggestion: str
+    customer_adds: Decimal
+    business_absorbs: Decimal

@@ -52,27 +52,24 @@ def get_rounding_suggestion(payload: SuggestionRequest, db: Session = Depends(ge
     )
 
     exact_total = result["base_amount"] - result["rounding_adjustment"]
-    adj = result["rounding_adjustment"]
-
-    if adj > 0:
-        suggestion = (
-            f"Option 1: Ask customer to add more to cover the missing {adj} and hit a neat amount. "
-            f"Option 2: Just round it off and the business absorbs the {adj} loss."
-        )
-    elif adj < 0:
-        suggestion = (
-            f"Option 1: Tell the customer we are rounding down, so the business gains {abs(adj)}. "
-            f"Option 2: Just round it off."
-        )
+    
+    # Calculate the options based on the 0.05 cash step
+    step = Decimal("0.05")
+    remainder = exact_total % step
+    if remainder == Decimal("0"):
+        business_absorbs = Decimal("0.00")
+        customer_adds = Decimal("0.00")
     else:
-        suggestion = "The amount is perfectly even. Just process it."
+        business_absorbs = remainder
+        customer_adds = step - remainder
 
     return SuggestionResponse(
         exact_base_total=exact_total,
         rounded_base_total=result["base_amount"],
-        rounding_adjustment=adj,
+        rounding_adjustment=result["rounding_adjustment"],
         fee_amount=result["fee_amount"],
-        suggestion=suggestion
+        customer_adds=customer_adds,
+        business_absorbs=business_absorbs
     )
 
 
