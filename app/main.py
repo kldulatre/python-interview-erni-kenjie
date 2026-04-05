@@ -11,7 +11,9 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    description="Money Changer Web API for recording foreign exchange transactions.",
+    version="1.0.0",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
 
 # Set all CORS enabled origins
@@ -25,11 +27,8 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
-# app.include_router(exchange_rate_router, prefix=settings.API_V1_STR)
+
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to the FastAPI REST API blueprint!"}
-
-
-
+    return {"message": "Welcome to the Money Changer API!"}
