@@ -10,7 +10,7 @@ from fastapi import HTTPException
 
 
 class FrankfurterService:
-    BASE_URL = "https://api.frankfurter.app"
+    BASE_URL = "https://api.frankfurter.dev/v1"
 
     def fetch_rate(self, rate_date: date, base_currency: str, quote_currency: str) -> Decimal:
         """
@@ -27,7 +27,7 @@ class FrankfurterService:
         try:
             # We use a synchronous request here for simplicity,
             # though async via httpx.AsyncClient is preferred in async FastAPI workloads.
-            with httpx.Client() as client:
+            with httpx.Client(follow_redirects=True) as client:
                 response = client.get(url, params=params, timeout=10.0)
 
             if response.status_code == 404:
