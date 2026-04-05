@@ -4,15 +4,52 @@ Transaction API router — endpoints for recording and querying FX transactions.
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.api.v1.transactions.resources import TransactionResource
 from app.schemas.transaction_schema import TransactionCreate, TransactionResponse
+from app.schemas.suggestion_schema import SuggestionRequest, SuggestionResponse
+from app.services.transaction_handler import TransactionHandlerFactory
 
 router = APIRouter()
 _resource = TransactionResource()
+
+@router.post("/suggest", response_model=SuggestionResponse)
+def get_rounding_suggestion(payload: SuggestionRequest):
+    """
+    Given an amount and rate, compute the rounding adjustment required
+    and suggest whether to prompt the customer or simply round off.
+    """
+    if payload.foreign_amount is None and payload.base_amount is None:
+        raise HTTPException(status_code=422, detail="Either foreign_amount or base_amount is required.")
+    if payload.foreign_amount is not None and payload.base_amount is not None:
+        raise HTTPException(status_code=422, detail="Only one of foreign_amount or base_amount should be provided.")
+
+    handler = TransactionHandlerFactory.get_handler(payload.side)
+    result = handler.process(
+        rate=payload.rate,
+        foreign_amount=payload.foreign_amount,
+        base_amount=payload.base_amount,
+    )
+
+    exact_total = result["base_amount"] - result["rounding_adjustment"]
+    adj = result["rounding_adjustment"]
+
+    if adj > 0:
+        suggestion = "Ask customer to add more to avoid rounding loss, or round off to absorb the loss."
+    else:
+        suggestion = "Just round it off."
+
+    return SuggestionResponse(
+        exact_base_total=exact_total,
+        rounded_base_total=result["base_amount"],
+        rounding_adjustment=adj,
+        fee_amount=result["fee_amount"],
+        suggestion=suggestion
+    )
+
 
 
 @router.post("/", response_model=TransactionResponse, status_code=201)

@@ -199,3 +199,52 @@ class TestListTransactions:
         resp = client.get("/api/v1/transactions/")
         assert resp.status_code == 200
         assert resp.json() == []
+
+
+class TestSuggestionEndpoint:
+    """POST /api/v1/transactions/suggest"""
+
+    def test_suggestion_round_down(self, client):
+        """When rounding down, business gains/breaks even -> 'Just round it off.'"""
+        resp = client.post("/api/v1/transactions/suggest", json={
+            "side": "SELL",
+            "rate": "50.00",
+            "foreign_amount": "100.00"
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert float(data["rounding_adjustment"]) == 0.0
+        assert data["suggestion"] == "Just round it off."
+
+    def test_suggestion_round_up(self, client):
+        """When rounding up, business loses -> 'Ask customer to add more...'."""
+        # BUY: rate=50, foreign=100.03
+        # raw base=5001.50, fee=25.01, approx exact=4976.49 
+        # rounded to 0.05 step=4976.50
+        # diff is +0.01
+        resp = client.post("/api/v1/transactions/suggest", json={
+            "side": "BUY",
+            "rate": "50.00",
+            "foreign_amount": "100.03"
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert float(data["rounding_adjustment"]) == 0.01
+        assert data["suggestion"] == "Ask customer to add more to avoid rounding loss, or round off to absorb the loss."
+
+    def test_validation_errors(self, client):
+        # Missing amounts
+        resp1 = client.post("/api/v1/transactions/suggest", json={
+            "side": "BUY",
+            "rate": "50.00"
+        })
+        assert resp1.status_code == 422
+
+        # Both amounts supplied
+        resp2 = client.post("/api/v1/transactions/suggest", json={
+            "side": "BUY",
+            "rate": "50.00",
+            "foreign_amount": "100",
+            "base_amount": "5000"
+        })
+        assert resp2.status_code == 422
