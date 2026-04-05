@@ -8,7 +8,7 @@ import os
 # Ensure the app module can be found when running from the command line
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.db.base_class import Base
+from app.db.base import Base
 from app.db.session import engine, SessionLocal
 from app.models.currency_model import CurrencyModel
 

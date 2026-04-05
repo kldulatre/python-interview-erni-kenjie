@@ -1,6 +1,9 @@
+import os
 from typing import List, Union
 from pydantic import AnyHttpUrl, validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Money Changer API"
@@ -10,8 +13,9 @@ class Settings(BaseSettings):
     
     # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    
     # Core Database settings
-    SQLALCHEMY_DATABASE_URL: str = "sqlite:///./sql_app.db"
+    SQLALCHEMY_DATABASE_URL: str = f"sqlite:///{os.path.join(_BASE_DIR, 'sql_app.db')}"
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
