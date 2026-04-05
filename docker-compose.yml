@@ -1,0 +1,30 @@
+anversion: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: money-changer-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - TZ=UTC
+    # Starts the API with hot reloading enabled for easy local development 
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Optional: Uncomment and run `docker-compose up seed_db` to run the DB seeder once
+  seed_db:
+    build: .
+    container_name: money-changer-seeder
+    command: python scripts/seed_currencies.py
+    volumes:
+      - .:/app
+
+  # Optional: You can easily add a CRON container to periodically run the `sync_rates.py` 
+  cron_sync:
+    build: .
+    container_name: money-changer-cron
+    command: bash -c "while true; do python scripts/sync_rates.py; sleep 86400; done"
+    volumes:
+      - .:/app
