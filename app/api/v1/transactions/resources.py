@@ -30,6 +30,9 @@ class TransactionResource:
         """
         txn_date = payload.timestamp.date()
 
+        from app.api.v1.currency.resources import CurrencyResource
+        CurrencyResource().validate_currencies(db, [payload.base_currency, payload.quote_currency])
+
         # 1. Rate lookup
         rate_record = self._rate_resource.get_rate(
             db,

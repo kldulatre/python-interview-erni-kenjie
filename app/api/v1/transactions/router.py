@@ -27,6 +27,9 @@ def get_rounding_suggestion(payload: SuggestionRequest, db: Session = Depends(ge
     if payload.foreign_amount is not None and payload.base_amount is not None:
         raise HTTPException(status_code=422, detail="Only one of foreign_amount or base_amount should be provided.")
 
+    from app.api.v1.currency.resources import CurrencyResource
+    CurrencyResource().validate_currencies(db, [payload.base_currency, payload.quote_currency])
+
     from datetime import datetime
     from app.api.v1.exchange_rate.resources import ExchangeRateResource
     from decimal import Decimal

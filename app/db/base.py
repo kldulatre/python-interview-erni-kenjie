@@ -3,3 +3,4 @@
 from app.db.base_class import Base  # noqa
 from app.models.exchange_rate_model import ExchangeRateModel  # noqa
 from app.models.transaction_model import TransactionModel  # noqa
+from app.models.currency_model import CurrencyModel # noqa

@@ -22,6 +22,9 @@ class ExchangeRateResource:
         for the same (rate_date, base_currency, quote_currency, side).
         If payload.rate is not provided, fetch it from a 3rd party API and apply a spread.
         """
+        from app.api.v1.currency.resources import CurrencyResource
+        CurrencyResource().validate_currencies(db, [payload.base_currency, payload.quote_currency])
+
         existing = (
             db.query(ExchangeRateModel)
             .filter(

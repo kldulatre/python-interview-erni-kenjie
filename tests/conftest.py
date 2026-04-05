@@ -24,9 +24,19 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 @pytest.fixture(scope="function")
 def db_session():
-    """Create a fresh DB for each test."""
+    """Create a fresh DB for each test and seed initial currencies."""
     Base.metadata.create_all(bind=engine)
     session = TestingSessionLocal()
+    
+    from app.models.currency_model import CurrencyModel
+    session.add_all([
+        CurrencyModel(code="PHP", name="Philippine Peso"),
+        CurrencyModel(code="USD", name="US Dollar"),
+        CurrencyModel(code="EUR", name="Euro"),
+        CurrencyModel(code="SGD", name="Singapore Dollar"),
+    ])
+    session.commit()
+
     try:
         yield session
     finally:
@@ -37,13 +47,13 @@ def db_session():
 @pytest.fixture(scope="function")
 def client(db_session):
     """FastAPI test client wired to the test DB."""
-    def _override_get_db():
+    def override_get_db():
         try:
             yield db_session
         finally:
             pass
 
-    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
