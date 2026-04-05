@@ -36,7 +36,7 @@ class TestCreateRate:
         # Verify the mock was called correctly
         mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
-        assert "api.frankfurter.app/2026-02-02" in args[0]
+        assert "api.frankfurter.dev/v1/2026-02-02" in args[0]
         assert kwargs["params"] == {"from": "PHP", "to": "USD"}
 
     def test_create_rate_success(self, client, sample_rate_payload):
