@@ -12,7 +12,7 @@ from app.services.transaction_handler import (
     SellTransactionHandler,
     TransactionHandlerFactory,
     FEE_RATE,
-    ROUNDING_STEP,
+    get_currency_rounding_rules,
 )
 
 
@@ -44,6 +44,7 @@ class TestBuyTransactionHandler:
     def test_process_applies_fee_and_rounding(self):
         result = self.handler.process(
             rate=Decimal("55.80"),
+            base_currency="SGD",
             foreign_amount=Decimal("1000.00"),
         )
         # BUY: store pays less base currency (subtracts fee)
@@ -84,6 +85,7 @@ class TestSellTransactionHandler:
     def test_process_applies_fee_and_rounding(self):
         result = self.handler.process(
             rate=Decimal("56.50"),
+            base_currency="SGD",
             foreign_amount=Decimal("1000.00"),
         )
         # SELL: customer pays more base currency (fee added)
@@ -155,16 +157,16 @@ class TestSharedHelpers:
         assert fee == expected
 
     def test_apply_rounding(self):
-        rounded, adj = self.handler.apply_rounding(Decimal("100.03"))
+        rounded, adj = self.handler.apply_rounding(Decimal("100.03"), base_currency="SGD")
         assert rounded == Decimal("100.05")
         assert adj == Decimal("0.02")
 
     def test_apply_rounding_already_on_step(self):
-        rounded, adj = self.handler.apply_rounding(Decimal("100.00"))
+        rounded, adj = self.handler.apply_rounding(Decimal("100.00"), base_currency="SGD")
         assert rounded == Decimal("100.00")
         assert adj == Decimal("0.00")
 
     def test_apply_rounding_rounds_down(self):
-        rounded, adj = self.handler.apply_rounding(Decimal("100.02"))
+        rounded, adj = self.handler.apply_rounding(Decimal("100.02"), base_currency="SGD")
         assert rounded == Decimal("100.00")
         assert adj == Decimal("-0.02")

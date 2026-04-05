@@ -269,11 +269,12 @@ class TestSuggestionEndpoint:
         assert resp.status_code == 200
         data = resp.json()
         # raw base=5001.50, fee=25.01, approx exact=4976.49 
-        # remainder = 4976.49 % 0.05 = 0.04
-        # business absorbs = 0.04
-        # customer adds = 0.05 - 0.04 = 0.01
-        assert float(data["customer_adds"]) == 0.01
-        assert float(data["business_absorbs"]) == 0.04
+        # PHP suggestion step = 5.00
+        # remainder = 4976.49 % 5.00 = 1.49
+        # business absorbs = 1.49
+        # customer adds = 5.00 - 1.49 = 3.51
+        assert float(data["customer_adds"]) == 3.51
+        assert float(data["business_absorbs"]) == 1.49
 
     def test_validation_errors(self, client):
         # Missing amounts
