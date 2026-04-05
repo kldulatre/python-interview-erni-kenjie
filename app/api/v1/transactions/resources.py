@@ -57,6 +57,7 @@ class TransactionResource:
         handler = TransactionHandlerFactory.get_handler(payload.side)
         result = handler.process(
             rate=rate_value,
+            base_currency=payload.base_currency,
             foreign_amount=payload.foreign_amount,
             base_amount=payload.base_amount,
         )

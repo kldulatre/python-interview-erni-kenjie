@@ -17,7 +17,20 @@ from app.models.transaction_model import TransactionModel
 
 # ---------- Constants ----------
 FEE_RATE = Decimal("0.005")          # 0.5% service fee
-ROUNDING_STEP = Decimal("0.05")      # round to nearest 0.05 for cash
+
+def get_currency_rounding_rules(currency: str) -> tuple[Decimal, Decimal]:
+    """
+    Returns (transaction_rounding_step, suggestion_step) for a given currency.
+    - PHP: base transaction rounds to nearest 1 peso, suggestion aims for multiple of 5 pesos.
+    - Default: fallback to 0.05 for both if not specified.
+    """
+    rules = {
+        "PHP": (Decimal("1.00"), Decimal("5.00")),
+        "SGD": (Decimal("0.05"), Decimal("0.05")),
+        "USD": (Decimal("0.01"), Decimal("0.05")),
+        "EUR": (Decimal("0.01"), Decimal("0.05")),
+    }
+    return rules.get(currency.upper(), (Decimal("0.05"), Decimal("0.05")))
 
 
 class BaseTransactionHandler(ABC):
@@ -55,12 +68,13 @@ class BaseTransactionHandler(ABC):
         """Calculate the service fee on a given amount."""
         return (amount * FEE_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-    def apply_rounding(self, amount: Decimal) -> tuple[Decimal, Decimal]:
+    def apply_rounding(self, amount: Decimal, base_currency: str) -> tuple[Decimal, Decimal]:
         """
-        Round an amount to the nearest ROUNDING_STEP.
+        Round an amount to the nearest transaction step for the currency.
         Returns (rounded_amount, rounding_adjustment).
         """
-        rounded = (amount / ROUNDING_STEP).quantize(Decimal("1"), rounding=ROUND_HALF_UP) * ROUNDING_STEP
+        tx_step, _ = get_currency_rounding_rules(base_currency)
+        rounded = (amount / tx_step).quantize(Decimal("1"), rounding=ROUND_HALF_UP) * tx_step
         adjustment = rounded - amount
         return rounded, adjustment.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
@@ -84,6 +98,7 @@ class BaseTransactionHandler(ABC):
     def process(
         self,
         rate: Decimal,
+        base_currency: str,
         foreign_amount: Decimal | None = None,
         base_amount: Decimal | None = None,
     ) -> dict:
@@ -104,7 +119,7 @@ class BaseTransactionHandler(ABC):
             adjusted_base = amounts["base_amount"] - fee
 
         # Round the amount given to the customer
-        rounded_base, rounding_adj = self.apply_rounding(adjusted_base)
+        rounded_base, rounding_adj = self.apply_rounding(adjusted_base, base_currency)
 
         return {
             "foreign_amount": amounts["foreign_amount"],

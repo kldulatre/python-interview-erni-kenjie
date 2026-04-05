@@ -50,21 +50,24 @@ def get_rounding_suggestion(payload: SuggestionRequest, db: Session = Depends(ge
     handler = TransactionHandlerFactory.get_handler(payload.side)
     result = handler.process(
         rate=rate_val,
+        base_currency=payload.base_currency,
         foreign_amount=payload.foreign_amount,
         base_amount=payload.base_amount,
     )
 
     exact_total = result["base_amount"] - result["rounding_adjustment"]
     
-    # Calculate the options based on the 0.05 cash step
-    step = Decimal("0.05")
-    remainder = exact_total % step
+    from app.services.transaction_handler import get_currency_rounding_rules
+    _, suggestion_step = get_currency_rounding_rules(payload.base_currency)
+
+    # Calculate the options based on the target suggestion step
+    remainder = exact_total % suggestion_step
     if remainder == Decimal("0"):
         business_absorbs = Decimal("0.00")
         customer_adds = Decimal("0.00")
     else:
         business_absorbs = remainder
-        customer_adds = step - remainder
+        customer_adds = suggestion_step - remainder
 
     return SuggestionResponse(
         exact_base_total=exact_total,
