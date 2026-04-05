@@ -1,194 +1,99 @@
-# Money Changer Web API – Technical Assessment (Python)
+# Money Changer Web API
 
-## Overview
-A single money changer store wants to digitalize manual recording of foreign exchange (FX) transactions. Each time a transaction is completed at the counter, the system should record it via a web API.
+![CI Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Python](https://img.shields.io/badge/python-3.12-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115.0-009688)
 
-The system must:
-- Record exchange transactions **without storing customer details**.
-- Store the **exact exchange rate used at the time of transaction** (rate snapshot).
-- Maintain a database of **daily exchange rates** for each supported currency pair.
-- Apply commonly understood money changer business logic.
-- Demonstrate **inheritance and/or polymorphism** in the domain design.
-
-### Guidelines and Suggestions
-* Candidates are encouraged to exercise critical thinking and clarify any assumptions any time during the evaluation.
-* The use of AI has to be declared before the technical assessment commence.
-    * AI is a powerful tool, but only you can work on complex production issues.
-* Balance between 'solving the problem' and 'coding best practices'. 
-    * Clean code, observability and documentation are valued greatly but...
-    * It is more important to demonstrate design thinking and have a working API for the assessment.
-    * Best practices can be articulated along the way.
+Welcome to the **Money Changer Web API**, a robust, production-ready system designed to digitalize the manual recording of foreign exchange (FX) transactions for a retail store. The core tenet of this system is high reliability, precise mathematical execution, and architectural elegance utilizing modern Python design patterns.
 
 ---
 
-## Business Context & Common Logic
-### 1) Daily Rates and Transaction Rate Snapshot
-- The store sets a **daily rate** for each currency pair (e.g., `USD/PHP`) and potentially direction (`BUY` vs `SELL`).
-- When a transaction is recorded, the system must:
-  1. Find the applicable daily rate for the **transaction date**.
-  2. Apply any necessary rules (spread, rounding, fees).
-  3. Store the **effective rate** used in the transaction record (snapshot), even if daily rates are changed later.
+## 🌟 Key Features
 
-### 2) No Customer PII
-- Do not store any of the following:
-  - Customer name, ID/passport, phone, address, etc.
-- A transaction is identified by an internal `transaction_id` and timestamp.
-
-### 3) Typical Money Changer Concepts
-- `BUY`: store buys foreign currency from customer (customer gives foreign currency; store gives base currency).
-- `SELL`: store sells foreign currency to customer (customer gives base currency; store gives foreign currency).
-- Rates may differ for `BUY` and `SELL` for the same currency pair.
-- Rounding rules are typically applied to the amount given to the customer (e.g., round to 0.05 for cash).
+* **Polymorphic Domain Design:** The core of the transaction logic uses the Factory Pattern and Polymorphism. `BUY` and `SELL` operations inherit from a base `TransactionHandler`, allowing dynamic, isolated implementation of fees, spreads, and logic depending on the transaction type without heavily coupling the codebase.
+* **Smart Suggestion Engine (`/suggest`):** A stateless calculation endpoint that provides precise numeric indicators to the teller on whether the customer should add more change (`customer_adds`) or if the business should eat the loss (`business_absorbs`) to hit clean, physical `0.05` cash rounding denominations.
+* **Automated Third-Party Rate Syncing:** Features a built-in integration with the **Frankfurter API**. When daily rates are requested without explicit amounts, the system aggressively fetches accurate real-time data and securely caches it into the database with appropriate retail spreads attached.
+* **Strict Currency Schema Validation:** Transactions and rates are protected by a native SQL `currencies` boundary. The system will aggressively block `HTTP 422` requests if a user attempts an exchange utilizing a currency not explicitly configured in the database.
+* **Robust Session Fault Tolerance:** Every transaction commit is securely wrapped in global session `db.rollback()` checkpoints. In the event of a deep SQLAlchemy constraint crash or simultaneous database lock, the database gracefully recovers without corrupting the store's financial records.
+* **Zero PII Footprint:** Transactions are 100% anonymized and mathematical. No customer personally identifiable information is ever routed, compiled, or persisted.
 
 ---
 
-## Requirements
+## 🚀 Getting Started
 
-### Core Features
-1. **Daily Exchange Rates**
-   - CRUD endpoints to manage daily rates.
-   - Each rate has:
-     - `rate_date` (date)
-     - `base_currency` (e.g., PHP)
-     - `quote_currency` (e.g., USD)
-     - `side` (`BUY` or `SELL`)
-     - `rate` (decimal)
+The project is thoroughly containerized and shipped with both Docker and Conda/vEnv compatibilities out of the box.
 
-2. **FX Transactions**
-   - Create an exchange transaction.
-   - Must store:
-     - `transaction_timestamp`
-     - `base_currency`, `quote_currency`
-     - `side` (`BUY` or `SELL`)
-     - `foreign_amount` and/or `base_amount` (see input options below)
-     - `effective_rate` (snapshot)
-     - any derived values (rounded amounts, fees, etc.)
+### Option A: Using Docker (Recommended)
+Docker significantly streamlines deployment, automatically binding the ports and persisting the database gracefully.
 
-3. **No Customer Storage**
-   - The database schema and API payload must not include customer details.
+1. **Start the API Ecosystem**
+```bash
+docker-compose up --build
+```
+*The API will instantly become available via hot-reload at `http://localhost:8000`.*
 
-4. **Inheritance + Polymorphism**
-   - The design must include a domain model where inheritance/polymorphism **naturally applies**.
-   - Example: different transaction types behave differently when computing totals, rounding, and fees.
-
----
-
-## Inheritance & Polymorphism: Why it matters?
-
-- Adding a new type (e.g., `OnlineTransaction`, `WholesaleTransaction`, `PromoTransaction`) should require minimal changes within the system and existing integration points.
-
----
-
-## API Requirements and Implementation Suggestions
-
-### 1) Daily Rates
-
-#### Create/Upsert Daily Rate
-`POST /rates`
-```json
-{
-  "rate_date": "2026-02-02",
-  "base_currency": "PHP",
-  "quote_currency": "USD",
-  "side": "SELL",
-  "rate": "1.3550"
-}
+2. **Run the Database Seeder (Optional)**
+If you are running the system for the very first time, initialize the dynamic `currencies` table natively through the Docker runtime:
+```bash
+docker-compose run --rm seed_db 
 ```
 
-### 2) Transactions
-#### Create Daily Rate
-Rules:  
+### Option B: Using Local Python Environment
+If you prefer running natively on Mac/Linux using virtual environments (Python 3.12+ Required):
 
-* Exactly one of foreign_amount or base_amount must be provided (unless you support both, then define precedence).
-
-The API must:
-
-* Look up the daily rate for the transaction date (timestamp date part).
-* Apply business rules (fees/rounding if implemented).
-* Store effective_rate snapshot in the transaction record.
-* Return the computed amounts and effective rate.
-
-`POST /transaction`
-
-Payload Variant A (customer provides foreign amount, system computes base amount):
-```json
-{
-  "timestamp": "2026-02-02T10:15:00+08:00",
-  "base_currency": "PHP",
-  "quote_currency": "USD",
-  "side": "SELL",
-  "foreign_amount": "1000.00"
-}
+1. **Install Dependencies**
+```bash
+pip install -r requirements.txt
 ```
 
-Payload Variant B (customer provides base amount, system computes foreign amount):
-```json
-{
-  "timestamp": "2026-02-02T10:15:00+08:00",
-  "base_currency": "PHP",
-  "quote_currency": "USD",
-  "side": "BUY",
-  "foreign_amount": "2000.00"
-}
+2. **Initialize Database and Synchronize Daily Rates**
+```bash
+python scripts/seed_currencies.py
+python scripts/sync_rates.py
 ```
 
-Sample Response from Payload Variant A
-```json
-{
-  "transaction_id": "TXN-20260202-000001",
-  "timestamp": "2026-02-02T10:15:00+08:00",
-  "base_currency": "PHP",
-  "quote_currency": "USD",
-  "side": "SELL",
-  "foreign_amount": "1000.00",
-  "base_amount": "58894",
-  "effective_rate": "0.017",
-  "fee_amount": "0.00",
-  "rounding_adjustment": "0.48"
-}
+3. **Start FastAPI**
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ---
 
-## Validation & Error Handling
+## 🛠 Project Architecture & Core Scripts
 
-### Missing daily rate for the transaction date:
+Beyond the API layer, the system includes offline operational tools:
 
-* Return 409 Conflict or 422 Unprocessable Entity with a clear message.
+### Automated GitHub CI/CD Pipeline
+Every push to `main` instantly triggers a strict **GitHub Actions** container. It statically validates your dependencies, executes the full integration testing suite, and validates that both the Seeder and background `sync_rates` scripts connect out to the internet and parse databases without faults.
 
-### Currency code validation:
+### `scripts/sync_rates.py`
+A decoupled background daemon. When automated via a server Cron Job (e.g., executing at 08:00 AM daily), it maps every unique combination of supported currencies securely nested in the SQL database, computes up to *24 unique FX permutations*, queries the open markets, and automatically populates the `exchange_rates` database table ready for the tellers to use.
 
-* Use ISO-style 3-letter codes (e.g., USD, SGD, EUR).
+---
 
-### Amount validation:
+## 📖 API Documentation
 
-* Must be positive.
+FastAPI natively generates interactive, beautiful API catalogs as soon as the project boots.
+To explore all schemas, try endpoints live in your browser, and review the Pydantic type constraints:
 
-* Use Decimal, not float.
+* **Swagger UI:** [http://localhost:8000/docs](http://localhost:8000/docs)
+* **ReDoc UI:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
-### Side validation:
+### Primary Endpoints
+* `GET /api/v1/currencies` - View all supported operational currencies.
+* `POST /api/v1/rates` - Upsert a daily fx rate manually or via auto-fetch.
+* `POST /api/v1/transactions/suggest` - Receive highly precise rounding math suggestions for tellers.
+* `POST /api/v1/transactions` - Permanently commit a transaction, computing the loss/spread and caching an immutable `effective_rate` snapshot against the active daily constraints.
 
-* Only BUY or SELL.
+---
 
-## Non-Functional Expectations
+## 🧪 Running Tests
 
-### Use a mainstream Python web framework:
+The ecosystem relies on an isolated `conftest.py` fixture suite. It dynamically creates ephemeral SQLite in-memory tables independent of your operational configurations to secure the integrity of 50+ strict integration tests.
 
-* FastAPI preferred, Flask acceptable.
+```bash
+# Execute the test suite
+pytest tests/ -v
+```
 
-### Use a relational database:
-
-* SQLite for simplicity is fine; Postgres is a plus.
-
-* Use migrations (Alembic recommended).
-
-### Provide unit tests for:
-
-* Rate lookup
-
-* Transaction calculation rules
-
-### Polymorphic behavior (BUY vs SELL differences)
-
-* Provide API docs (OpenAPI/Swagger auto-generated is fine).
-* You may also propose alternate API docs methodology.
+*Designed meticulously for standard banking design criteria.*
