@@ -66,8 +66,12 @@ class ExchangeRateResource:
 
         if existing:
             existing.rate = final_rate
-            db.commit()
-            db.refresh(existing)
+            try:
+                db.commit()
+                db.refresh(existing)
+            except Exception as e:
+                db.rollback()
+                raise HTTPException(status_code=500, detail=str(e))
             return existing
 
         new_rate = ExchangeRateModel(
@@ -78,8 +82,12 @@ class ExchangeRateResource:
             rate=final_rate,
         )
         db.add(new_rate)
-        db.commit()
-        db.refresh(new_rate)
+        try:
+            db.commit()
+            db.refresh(new_rate)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
         return new_rate
 
     # ---------- READ ----------
@@ -137,13 +145,21 @@ class ExchangeRateResource:
     def update_rate(self, db: Session, rate_id: int, payload: ExchangeRateUpdate) -> ExchangeRateModel:
         rate = self.get_rate_by_id(db, rate_id)
         rate.rate = payload.rate
-        db.commit()
-        db.refresh(rate)
+        try:
+            db.commit()
+            db.refresh(rate)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
         return rate
 
     # ---------- DELETE ----------
     def delete_rate(self, db: Session, rate_id: int) -> ExchangeRateModel:
         rate = self.get_rate_by_id(db, rate_id)
         db.delete(rate)
-        db.commit()
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
         return rate

@@ -79,8 +79,12 @@ class TransactionResource:
             rounding_adjustment=result["rounding_adjustment"],
         )
         db.add(txn)
-        db.commit()
-        db.refresh(txn)
+        try:
+            db.commit()
+            db.refresh(txn)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
         return txn
 
     def get_transaction_by_id(self, db: Session, transaction_id: str) -> TransactionModel:

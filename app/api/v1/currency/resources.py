@@ -15,9 +15,13 @@ class CurrencyResource:
         
         new_curr = CurrencyModel(code=payload.code, name=payload.name)
         db.add(new_curr)
-        db.commit()
-        db.refresh(new_curr)
-        return new_curr
+        try:
+            db.commit()
+            db.refresh(new_curr)
+            return new_curr
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
     def list_currencies(self, db: Session, skip: int = 0, limit: int = 100) -> list[CurrencyModel]:
         return db.query(CurrencyModel).order_by(CurrencyModel.code).offset(skip).limit(limit).all()
@@ -31,7 +35,11 @@ class CurrencyResource:
     def delete_currency(self, db: Session, code: str) -> None:
         curr = self.get_currency(db, code)
         db.delete(curr)
-        db.commit()
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
     def validate_currencies(self, db: Session, codes: list[str]) -> None:
         codes = [c.upper() for c in set(codes)]
