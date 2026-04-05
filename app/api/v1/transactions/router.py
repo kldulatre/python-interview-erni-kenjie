@@ -153,3 +153,12 @@ def get_transaction(
         fee_amount=txn.fee_amount,
         rounding_adjustment=txn.rounding_adjustment,
     )
+
+@router.delete("/{transaction_id}")
+def delete_transaction(
+    transaction_id: str,
+    db: Session = Depends(get_db),
+):
+    """Soft delete a transaction permanently."""
+    _resource.delete_transaction(db, transaction_id)
+    return {"status": "success", "detail": f"Transaction '{transaction_id}' archived"}

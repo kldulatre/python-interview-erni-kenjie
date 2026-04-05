@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Numeric, Date, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Numeric, Date, UniqueConstraint, Boolean, DateTime
+from sqlalchemy.sql import func
 from app.db.base_class import Base
 
 
@@ -18,3 +19,6 @@ class ExchangeRateModel(Base):
     quote_currency = Column(String(3), nullable=False, index=True)
     side = Column(String(4), nullable=False, index=True)
     rate = Column(Numeric(precision=18, scale=6), nullable=False)
+    is_deleted = Column(Boolean, default=False, nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

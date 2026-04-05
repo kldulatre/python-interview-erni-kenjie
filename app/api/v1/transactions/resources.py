@@ -90,7 +90,7 @@ class TransactionResource:
     def get_transaction_by_id(self, db: Session, transaction_id: str) -> TransactionModel:
         txn = (
             db.query(TransactionModel)
-            .filter(TransactionModel.transaction_id == transaction_id)
+            .filter(TransactionModel.transaction_id == transaction_id, TransactionModel.is_deleted == False)
             .first()
         )
         if txn is None:
@@ -109,7 +109,7 @@ class TransactionResource:
         skip: int = 0,
         limit: int = 100,
     ) -> list[TransactionModel]:
-        query = db.query(TransactionModel)
+        query = db.query(TransactionModel).filter(TransactionModel.is_deleted == False)
 
         if base_currency:
             query = query.filter(TransactionModel.base_currency == base_currency.upper())
@@ -124,3 +124,13 @@ class TransactionResource:
             .limit(limit)
             .all()
         )
+
+    def delete_transaction(self, db: Session, transaction_id: str) -> None:
+        txn = self.get_transaction_by_id(db, transaction_id)
+        txn.is_deleted = True
+        try:
+            db.commit()
+            db.refresh(txn)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=str(e))

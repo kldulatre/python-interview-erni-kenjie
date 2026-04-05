@@ -66,6 +66,7 @@ class ExchangeRateResource:
 
         if existing:
             existing.rate = final_rate
+            existing.is_deleted = False
             try:
                 db.commit()
                 db.refresh(existing)
@@ -92,7 +93,7 @@ class ExchangeRateResource:
 
     # ---------- READ ----------
     def get_rate_by_id(self, db: Session, rate_id: int) -> ExchangeRateModel:
-        rate = db.query(ExchangeRateModel).filter(ExchangeRateModel.id == rate_id).first()
+        rate = db.query(ExchangeRateModel).filter(ExchangeRateModel.id == rate_id, ExchangeRateModel.is_deleted == False).first()
         if rate is None:
             raise HTTPException(status_code=404, detail=f"Exchange rate with id={rate_id} not found")
         return rate
@@ -113,6 +114,7 @@ class ExchangeRateResource:
                 ExchangeRateModel.base_currency == base_currency,
                 ExchangeRateModel.quote_currency == quote_currency,
                 ExchangeRateModel.side == side,
+                ExchangeRateModel.is_deleted == False
             )
             .first()
         )
@@ -128,7 +130,7 @@ class ExchangeRateResource:
         limit: int = 100,
     ) -> list[ExchangeRateModel]:
         """Return rates, optionally filtered."""
-        query = db.query(ExchangeRateModel)
+        query = db.query(ExchangeRateModel).filter(ExchangeRateModel.is_deleted == False)
 
         if rate_date is not None:
             query = query.filter(ExchangeRateModel.rate_date == rate_date)
@@ -156,9 +158,10 @@ class ExchangeRateResource:
     # ---------- DELETE ----------
     def delete_rate(self, db: Session, rate_id: int) -> ExchangeRateModel:
         rate = self.get_rate_by_id(db, rate_id)
-        db.delete(rate)
+        rate.is_deleted = True
         try:
             db.commit()
+            db.refresh(rate)
         except Exception as e:
             db.rollback()
             raise HTTPException(status_code=500, detail=str(e))

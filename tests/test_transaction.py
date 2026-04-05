@@ -191,6 +191,33 @@ class TestGetTransaction:
         resp = client.get("/api/v1/transactions/TXN-99990101-000001")
         assert resp.status_code == 404
 
+class TestDeleteTransaction:
+    """DELETE /api/v1/transactions/{transaction_id}"""
+
+    def test_soft_delete_transaction(self, client):
+        client.post("/api/v1/rates/", json={
+            "rate_date": "2026-02-02",
+            "base_currency": "PHP",
+            "quote_currency": "USD",
+            "side": "SELL",
+            "rate": "56.50",
+        })
+        create_resp = client.post("/api/v1/transactions/", json={
+            "timestamp": "2026-02-02T10:15:00+08:00",
+            "base_currency": "PHP",
+            "quote_currency": "USD",
+            "side": "SELL",
+            "foreign_amount": "1000.00",
+        })
+        txn_id = create_resp.json()["transaction_id"]
+
+        del_resp = client.delete(f"/api/v1/transactions/{txn_id}")
+        assert del_resp.status_code == 200
+
+        # After soft delete, attempting to GET should yield 404
+        get_resp = client.get(f"/api/v1/transactions/{txn_id}")
+        assert get_resp.status_code == 404
+
 
 class TestListTransactions:
     """GET /api/v1/transactions"""
