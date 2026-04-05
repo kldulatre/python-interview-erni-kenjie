@@ -10,9 +10,19 @@ class SuggestionRequest(BaseModel):
     Either foreign_amount or base_amount must be provided.
     """
     side: str
-    rate: Decimal
+    base_currency: str
+    quote_currency: str
     foreign_amount: Optional[Decimal] = None
     base_amount: Optional[Decimal] = None
+
+    @field_validator("base_currency", "quote_currency")
+    @classmethod
+    def validate_currency_code(cls, v: str) -> str:
+        import re
+        v = v.upper().strip()
+        if not re.match(r"^[A-Z]{3}$", v):
+            raise ValueError(f"Currency code must be a 3-letter ISO code, got '{v}'")
+        return v
 
     @field_validator("side")
     @classmethod
@@ -22,7 +32,7 @@ class SuggestionRequest(BaseModel):
             raise ValueError(f"Side must be BUY or SELL, got '{v}'")
         return v
 
-    @field_validator("rate", "foreign_amount", "base_amount")
+    @field_validator("foreign_amount", "base_amount")
     @classmethod
     def validate_positive(cls, v: Optional[Decimal]) -> Optional[Decimal]:
         if v is not None and v <= 0:
