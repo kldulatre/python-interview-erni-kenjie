@@ -76,6 +76,7 @@ A decoupled background daemon. When automated via a server Cron Job (e.g., execu
 FastAPI natively generates interactive, beautiful API catalogs as soon as the project boots.
 To explore all schemas, try endpoints live in your browser, and review the Pydantic type constraints:
 
+* **API Usage Guide & JSON Payloads:** [API_USAGE.md](./API_USAGE.md)
 * **Swagger UI:** [http://localhost:8000/docs](http://localhost:8000/docs)
 * **ReDoc UI:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
